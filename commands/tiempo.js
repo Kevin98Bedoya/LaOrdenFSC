@@ -32,8 +32,8 @@ module.exports = {
         .setDescription('Calcula el tiempo objetivo de la partida.')
         .addStringOption(option => option.setName('jugador1').setDescription('Mención @jugador o Rango (ej: S+, S/A)').setRequired(true))
         .addStringOption(option => option.setName('jugador2').setDescription('Compañero 2 (Mención o Rango)').setRequired(true))
-        .addStringOption(option => option.setName('jugador3').setDescription('Compañero 3 (Mención o Rango)').setRequired(false))
-        .addStringOption(option => option.setName('jugador4').setDescription('Compañero 4 (Mención o Rango)').setRequired(false)),
+        .addStringOption(option => option.setName('jugador3').setDescription('Compañero 3 (Mención, Rango, o "-" para vacío)').setRequired(true))
+        .addStringOption(option => option.setName('jugador4').setDescription('Compañero 4 (Mención, Rango, o "-" para vacío)').setRequired(true)),
     async execute(interaction) {
         const inputStrings = [
             interaction.options.getString('jugador1'),
@@ -42,7 +42,13 @@ module.exports = {
             interaction.options.getString('jugador4')
         ];
 
-        const validInputs = inputStrings.filter(input => input !== null);
+        // Filtrar inputs para contar los que no sean un guion "-"
+        const validInputs = inputStrings.filter(input => {
+            if (!input) return false;
+            const str = input.trim();
+            if (str === '-' || str.toLowerCase() === 'nada' || str.toLowerCase() === 'vacio') return false; // Ignorar explícitamente vacíos
+            return true; // Contar cualquier otra cosa como jugador (si no es válido, se le asignará Sin-Rango)
+        });
         const playerCount = validInputs.length;
 
         let playersInfo = [];
@@ -114,10 +120,17 @@ module.exports = {
         const hasSinRango = playersInfo.some(p => p.currentRank === 'Sin-Rango');
         if (hasSinRango) {
             let sinRangoTime = '17:00';
-            if (playerCount === 3) sinRangoTime = '17:50';
-            else if (playerCount === 2) sinRangoTime = '18:15';
+            let extraReason = '';
             
-            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber un jugador "Sin-Rango" en la party (como rango actual), el tiempo requerido es automáticamente ${sinRangoTime}.*`;
+            if (playerCount === 3) {
+                sinRangoTime = '17:50';
+                extraReason = ' y estar jugando en Trío (3 personas)';
+            } else if (playerCount === 2) {
+                sinRangoTime = '18:15';
+                extraReason = ' y estar jugando en Dúo (2 personas)';
+            }
+            
+            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber un jugador "Sin-Rango" en la party (como rango actual)${extraReason}, el tiempo requerido es automáticamente ${sinRangoTime}.*`;
             if (warnings.length > 0) msg += `\n\n${warnings.join('\n')}`;
             return interaction.reply({ content: msg });
         }

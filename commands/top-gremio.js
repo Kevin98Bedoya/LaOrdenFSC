@@ -39,7 +39,7 @@ module.exports = {
                 if (member.user.bot) continue;
                 
                 // Filtro exclusivo para el gremio
-                const isGremio = member.roles.cache.some(r => r.name === 'La Orden Spiral');
+                const isGremio = member.roles.cache.some(r => r.name.includes('La Orden Spiral'));
                 if (!isGremio) continue;
 
                 const rank = getUserRank(member);
