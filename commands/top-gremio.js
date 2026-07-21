@@ -15,9 +15,18 @@ const EMOJIS = {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('top')
-        .setDescription('Muestra la Tierlist de todos los jugadores de la comunidad basándose en sus roles.'),
+        .setName('top-gremio')
+        .setDescription('Muestra la Tierlist exclusiva de los miembros del gremio (La Orden Spiral).'),
     async execute(interaction) {
+        // Verificar si tiene el rol administrativo
+        const hasPermission = interaction.member.roles.cache.some(role => 
+            role.name === 'Líder Del Gremio' || role.name === 'Oficial'
+        );
+
+        if (!hasPermission && !interaction.member.permissions.has('Administrator')) {
+            return interaction.reply({ content: '❌ No tienes permisos para usar este comando. Necesitas el rol "Líder Del Gremio" u "Oficial".', ephemeral: true });
+        }
+
         try {
             await interaction.deferReply();
             const members = await interaction.guild.members.fetch();
@@ -29,6 +38,10 @@ module.exports = {
             for (const [id, member] of members) {
                 if (member.user.bot) continue;
                 
+                // Filtro exclusivo para el gremio
+                const isGremio = member.roles.cache.some(r => r.name === 'La Orden Spiral');
+                if (!isGremio) continue;
+
                 const rank = getUserRank(member);
                 const hasExplicitSinRango = member.roles.cache.some(r => r.name === 'Sin-Rango');
                 const hasHistory = member.roles.cache.some(r => RANGOS_NOMBRES.some(rn => r.name.startsWith(rn + ' ')));
@@ -41,9 +54,9 @@ module.exports = {
             }
 
             const embed = new EmbedBuilder()
-                .setTitle('🏆 TIER LIST DE JUGADORES 🏆')
+                .setTitle('🏆 TIER LIST DEL GREMIO 🏆')
                 .setColor('#FFD700')
-                .setDescription('Todos los jugadores con un rango asignado, ordenados de mayor a menor.\n\n');
+                .setDescription('Miembros oficiales de La Orden Spiral ordenados de mayor a menor.\n\n');
 
             let description = embed.data.description;
             const orderedRanks = [...RANGOS_NOMBRES].reverse(); // De S+ a Sin-Rango
@@ -71,9 +84,9 @@ module.exports = {
         } catch (error) {
             console.error(error);
             if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({ content: 'Hubo un error al intentar mostrar el top. ¿Tiene el bot permisos para leer miembros?' });
+                await interaction.editReply({ content: 'Hubo un error al intentar mostrar el top del gremio.' });
             } else {
-                await interaction.reply({ content: 'Hubo un error al intentar mostrar el top.', ephemeral: true });
+                await interaction.reply({ content: 'Hubo un error al intentar mostrar el top del gremio.', ephemeral: true });
             }
         }
     },

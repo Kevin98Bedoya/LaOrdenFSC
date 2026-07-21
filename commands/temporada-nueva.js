@@ -1,15 +1,10 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { ensureRole, getUserRank, RANGOS_NOMBRES } = require('../utils');
+const { ensureRole, getUserRank, RANGOS_NOMBRES, getCurrentSeason } = require('../utils');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('nueva-temporada')
-        .setDescription('Reinicia los rangos de todos los jugadores guardando su historial de roles.')
-        .addStringOption(option => 
-            option.setName('nombre')
-                .setDescription('El nombre de la temporada que termina (Ej: T2, T3)')
-                .setRequired(true)
-        ),
+        .setName('temporada-nueva')
+        .setDescription('Reinicia los rangos de todos los jugadores guardando su historial de roles.'),
     async execute(interaction) {
         // Verificar si tiene el rol administrativo
         const hasPermission = interaction.member.roles.cache.some(role => 
@@ -20,10 +15,11 @@ module.exports = {
             return interaction.reply({ content: '❌ No tienes permisos para usar este comando. Necesitas el rol "Líder Del Gremio" u "Oficial".', ephemeral: true });
         }
 
-        const seasonName = interaction.options.getString('nombre');
-
         try {
             await interaction.deferReply();
+            
+            const currentSeasonNum = getCurrentSeason(interaction.guild);
+            const seasonName = `T${currentSeasonNum + 1}`;
             
             // Obtener todos los miembros
             const members = await interaction.guild.members.fetch();
