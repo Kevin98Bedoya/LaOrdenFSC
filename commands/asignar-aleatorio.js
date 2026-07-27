@@ -87,7 +87,10 @@ module.exports = {
             if (voltPlayer) {
                 voltMessage = `\n✅ **Voltedge:** Asignado a **${voltPlayer.displayName}**.`;
             } else {
-                voltMessage = `\n⚠️ **Advertencia Voltedge:** No se encontró a "${voltedgeStr}" entre los jugadores ingresados. Se ignoraron las reglas de Voltedge.`;
+                return await interaction.reply({
+                    content: `❌ **Error:** No se encontró a "${voltedgeStr}" entre los jugadores ingresados (Jugador 1 a 4). Corrige el nombre del usuario de Voltedge o elimina la opción Voltedge para continuar.`,
+                    ephemeral: true
+                });
             }
         }
 
@@ -204,7 +207,7 @@ async function asignarDuo(interaction, assignments, voltMessage) {
 
     embed.addFields({ name: '▬▬▬▬▬▬▬▬▬▬ PISO: D24 ▬▬▬▬▬▬▬▬▬▬', value: '\u200b', inline: false });
     embed.addFields({ name: '📍 Estatuas', value: `↖️ **Arriba Izq:** ${getPlayerForRole(assignments, 'D24', 'tl')}\n➡️ **Centro Der:** ${getPlayerForRole(assignments, 'D24', 'cr')}`, inline: false });
-    
+
     embed.addFields({ name: '▬▬▬▬▬▬▬▬▬▬ PISO: D25 ▬▬▬▬▬▬▬▬▬▬', value: '\u200b', inline: false });
     embed.addFields({ name: '📍 Habitaciones', value: `↘️ **Derecha:** ${getPlayerForRole(assignments, 'D25', 'right')}\n↙️ **Izquierda:** ${getPlayerForRole(assignments, 'D25', 'left')}`, inline: false });
 
@@ -232,7 +235,7 @@ async function asignarDuo(interaction, assignments, voltMessage) {
         dmMessage += `D26: ${p.roles.D26A1.icon} | ${p.roles.D26Last.icon.replace(' (⚠️ Voltedge)', '')}\n--------------------------------\n`;
         dmMessage += `D27: ${p.roles.D27Box.icon} | ${p.roles.D27Wolver.icon} | ${p.roles.D27Last.icon}\n--------------------------------\n`;
         dmMessage += `D28: ${p.roles.D28Water.icon} | ${p.roles.D28Boost.icon}\n`;
-        
+
         if (wormholeNames.includes(p.displayName)) {
             dmMessage = `⚠️ **Recordatorio:** ¡Necesitas tener el Wormhole instalado!\n\n` + dmMessage;
         }
@@ -379,7 +382,7 @@ async function asignarTrio(interaction, assignments, voltMessage) {
         dmMessage += `D26: ${p.roles.D26A1.icon} | ${p.roles.D26Last.icon} | ${p.roles.D26Bump.icon}\n--------------------------------\n`;
         dmMessage += `D27: ${p.roles.D27Box.icon} | ${p.roles.D27Wolver.icon} | ${p.roles.D27Last.icon}\n--------------------------------\n`;
         dmMessage += `D28: ${p.roles.D28Water.icon} | ${p.roles.D28Boost.icon}\n`;
-        
+
         dmMessage = `⚠️ **Recordatorio:** ¡Necesitas tener el Wormhole instalado!\n\n` + dmMessage;
 
         try { await p.user.send(dmMessage); } catch (err) {
