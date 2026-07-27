@@ -81,19 +81,29 @@ module.exports = {
 
         const playerCount = assignments.length;
 
+        let voltMessage = '';
+        if (voltedgeStr) {
+            const voltPlayer = assignments.find(p => p.isVoltedge);
+            if (voltPlayer) {
+                voltMessage = `\n✅ **Voltedge:** Asignado a **${voltPlayer.displayName}**.`;
+            } else {
+                voltMessage = `\n⚠️ **Advertencia Voltedge:** No se encontró a "${voltedgeStr}" entre los jugadores ingresados. Se ignoraron las reglas de Voltedge.`;
+            }
+        }
+
         if (playerCount === 2) {
-            await asignarDuo(interaction, assignments);
+            await asignarDuo(interaction, assignments, voltMessage);
         } else if (playerCount === 3) {
-            await asignarTrio(interaction, assignments);
+            await asignarTrio(interaction, assignments, voltMessage);
         } else if (playerCount === 4) {
-            await asignarSquad(interaction, assignments);
+            await asignarSquad(interaction, assignments, voltMessage);
         } else {
             await interaction.reply({ content: 'Se requieren al menos 2 jugadores válidos.', ephemeral: true });
         }
     }
 };
 
-async function asignarDuo(interaction, assignments) {
+async function asignarDuo(interaction, assignments, voltMessage) {
     const voltPlayer = assignments.find(p => p.isVoltedge);
 
     // --- D24 Estatuas ---
@@ -190,7 +200,7 @@ async function asignarDuo(interaction, assignments) {
     const embed = new EmbedBuilder()
         .setTitle('✨ Asignación de Roles')
         .setColor(0x2b2d31)
-        .setDescription(`${wormholeWarning}\nRoles para: **${allUsernames}**`);
+        .setDescription(`${wormholeWarning}${voltMessage}\n\nRoles para: **${allUsernames}**`);
 
     embed.addFields({ name: '▬▬▬▬▬▬▬▬▬▬ PISO: D24 ▬▬▬▬▬▬▬▬▬▬', value: '\u200b', inline: false });
     embed.addFields({ name: '📍 Estatuas', value: `↖️ **Arriba Izq:** ${getPlayerForRole(assignments, 'D24', 'tl')}\n➡️ **Centro Der:** ${getPlayerForRole(assignments, 'D24', 'cr')}`, inline: false });
@@ -233,7 +243,7 @@ async function asignarDuo(interaction, assignments) {
     }
 }
 
-async function asignarTrio(interaction, assignments) {
+async function asignarTrio(interaction, assignments, voltMessage) {
     const voltPlayer = assignments.find(p => p.isVoltedge);
 
     // --- D24 Estatuas ---
@@ -337,7 +347,7 @@ async function asignarTrio(interaction, assignments) {
     const embed = new EmbedBuilder()
         .setTitle('✨ Asignación de Roles')
         .setColor(0x2b2d31)
-        .setDescription(`${wormholeWarning}\nRoles para: **${allUsernames}**`);
+        .setDescription(`${wormholeWarning}${voltMessage}\n\nRoles para: **${allUsernames}**`);
 
     embed.addFields({ name: '▬▬▬▬▬▬▬▬▬▬ PISO: D24 ▬▬▬▬▬▬▬▬▬▬', value: '\u200b', inline: false });
     embed.addFields({ name: '📍 Estatuas', value: `⬆️ **Arriba:** ${getPlayerForRole(assignments, 'D24', 'top')}\n➡️ **Derecha:** ${getPlayerForRole(assignments, 'D24', 'right')}\n↙️ **Izquierda:** ${getPlayerForRole(assignments, 'D24', 'left')}`, inline: false });
@@ -378,7 +388,7 @@ async function asignarTrio(interaction, assignments) {
     }
 }
 
-async function asignarSquad(interaction, assignments) {
+async function asignarSquad(interaction, assignments, voltMessage) {
     const voltPlayer = assignments.find(p => p.isVoltedge);
 
     // --- D24 Estatuas ---
@@ -518,7 +528,7 @@ async function asignarSquad(interaction, assignments) {
     const embed = new EmbedBuilder()
         .setTitle('✨ Asignación de Roles')
         .setColor(0x2b2d31)
-        .setDescription(`${wormholeWarning}\n\nRoles para: **${allUsernames}**`);
+        .setDescription(`${wormholeWarning}${voltMessage}\n\nRoles para: **${allUsernames}**`);
 
     embed.addFields({ name: '▬▬▬▬▬▬▬▬▬▬ PISO: D24 ▬▬▬▬▬▬▬▬▬▬', value: '\u200b', inline: false });
     embed.addFields({
