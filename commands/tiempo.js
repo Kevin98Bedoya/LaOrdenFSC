@@ -80,18 +80,31 @@ module.exports = {
                     });
                 }
             } else {
-                // Es un string hipotético
-                let currentRank = 'Sin-Rango';
-                let previousRank = null;
-                let historySeason = 'Hip'; // Etiqueta para hipotético
-
+                // Es un rango especificado como texto
                 const parts = input.split('/');
                 const cRank = parts[0].trim();
-                if (RANGOS_NOMBRES.includes(cRank)) currentRank = cRank;
+
+                // Validar que el primer rango sea válido
+                if (!RANGOS_NOMBRES.includes(cRank)) {
+                    return interaction.reply({
+                        content: `❌ **Error:** "${input}" no es un parámetro válido. Cada espacio debe ser una mención (\`@Jugador\`), un guion (\`-\`) para omitir, o un rango válido (ej: \`C\` o \`S+/A\`).`,
+                        ephemeral: true
+                    });
+                }
+
+                let currentRank = cRank;
+                let previousRank = null;
+                let historySeason = 'Hip';
 
                 if (parts.length > 1) {
                     const pRank = parts[1].trim();
-                    if (RANGOS_NOMBRES.includes(pRank)) previousRank = pRank;
+                    if (!RANGOS_NOMBRES.includes(pRank)) {
+                        return interaction.reply({
+                            content: `❌ **Error:** El rango histórico "${pRank}" en "${input}" no es válido. Usa uno de: ${RANGOS_NOMBRES.join(', ')}.`,
+                            ephemeral: true
+                        });
+                    }
+                    previousRank = pRank;
                 }
 
                 playersInfo.push({
@@ -117,20 +130,23 @@ module.exports = {
         }
 
         // Si alguien es Sin-Rango (en su rango actual)
-        const hasSinRango = playersInfo.some(p => p.currentRank === 'Sin-Rango');
-        if (hasSinRango) {
+        const sinRangoPlayers = playersInfo.filter(p => p.currentRank === 'Sin-Rango');
+        if (sinRangoPlayers.length > 0) {
             let sinRangoTime = '17:00';
             let extraReason = '';
             
             if (playerCount === 3) {
-                sinRangoTime = '17:50';
+                sinRangoTime = '17:20';
                 extraReason = ' y estar jugando en Trío (3 personas)';
             } else if (playerCount === 2) {
-                sinRangoTime = '18:15';
+                sinRangoTime = '18:25';
                 extraReason = ' y estar jugando en Dúo (2 personas)';
             }
             
-            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber un jugador "Sin-Rango" en la party (como rango actual)${extraReason}, el tiempo requerido es automáticamente ${sinRangoTime}.*`;
+            const subenNombres = sinRangoPlayers.map(p => p.name).join(', ');
+            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber jugador(es) "Sin-Rango" en la party (${subenNombres})${extraReason}, el tiempo requerido es automáticamente ${sinRangoTime}.*`;
+            msg += `\n\n🎉 **Promoción:** Si se logra este tiempo, el/los siguiente(s) integrante(s) subirán a **Rango C**: **${subenNombres}**.`;
+
             if (warnings.length > 0) msg += `\n\n${warnings.join('\n')}`;
             return interaction.reply({ content: msg });
         }

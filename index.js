@@ -28,8 +28,56 @@ client.on('interactionCreate', async interaction => {
 	if (!interaction.isChatInputCommand()) return;
 
 	const command = client.commands.get(interaction.commandName);
-
 	if (!command) return;
+
+	const channelName = interaction.channel ? interaction.channel.name : '';
+	const commandName = interaction.commandName;
+
+	// --- 1. Verificación de Comandos de Administrador / Oficial ---
+	const adminCommands = ['nuevo', 'temporada-eliminar', 'temporada-nueva', 'temporada-reiniciar'];
+	if (adminCommands.includes(commandName)) {
+		const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has('Administrator');
+		const hasOficialRole = interaction.member && interaction.member.roles && interaction.member.roles.cache.some(r => r.name.toLowerCase() === 'oficial');
+
+		if (!isAdmin && !hasOficialRole) {
+			return await interaction.reply({
+				content: '❌ No tienes permisos para usar este comando. Se requiere ser **Administrador** o tener el rol **Oficial**.',
+				ephemeral: true
+			});
+		}
+
+		if (channelName !== '🕹️comandos-bot') {
+			return await interaction.reply({
+				content: '❌ Este comando solo se puede utilizar en el canal **#🕹️comandos-bot**.',
+				ephemeral: true
+			});
+		}
+	}
+
+	// --- 2. Verificación de Canales para Comandos Generales ---
+	const comandosBotGroup = ['tiempo', 'asignar-aleatorio', 'top'];
+	if (comandosBotGroup.includes(commandName) && channelName !== '🕹️comandos-bot') {
+		return await interaction.reply({
+			content: '❌ Este comando solo se puede utilizar en el canal **#🕹️comandos-bot**.',
+			ephemeral: true
+		});
+	}
+
+	const comandosGremioGroup = ['top-gremio', 'premios'];
+	if (comandosGremioGroup.includes(commandName) && channelName !== '🕹️🔵comandos-bot-gremio') {
+		return await interaction.reply({
+			content: '❌ Este comando solo se puede utilizar en el canal **#🕹️🔵comandos-bot-gremio**.',
+			ephemeral: true
+		});
+	}
+
+	const envioRunsGroup = ['rango'];
+	if (envioRunsGroup.includes(commandName) && channelName !== '📤envio-de-runs') {
+		return await interaction.reply({
+			content: '❌ Este comando solo se puede utilizar en el canal **#📤envio-de-runs**.',
+			ephemeral: true
+		});
+	}
 
 	try {
 		await command.execute(interaction);
