@@ -1,9 +1,33 @@
 require('dotenv').config();
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const http = require('node:http');
+const { Client, Collection, GatewayIntentBits, Options } = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+// Servidor HTTP simple para mantener Render despierto mediante pings
+const PORT = process.env.PORT || 10000;
+http.createServer((req, res) => {
+	res.writeHead(200, { 'Content-Type': 'text/plain' });
+	res.end('Bot de Discord activo');
+}).listen(PORT, () => {
+	console.log(`Servidor HTTP listo en el puerto ${PORT}`);
+});
+
+const client = new Client({
+	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+	makeCache: Options.cacheWithLimits({
+		MessageManager: 0,
+		PresenceManager: 0,
+		ReactionManager: 0,
+		ThreadManager: 0,
+		GuildBanManager: 0,
+		GuildInviteManager: 0,
+		GuildScheduledEventManager: 0,
+		GuildStickerManager: 0,
+		StageScaleManager: 0,
+		VoiceStateManager: 0
+	})
+});
 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
