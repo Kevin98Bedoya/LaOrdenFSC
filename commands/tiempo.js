@@ -167,23 +167,39 @@ module.exports = {
                 logThread = interaction.guild.channels.cache.find(c => c.name === 'comandos-bot-caché');
             }
 
+            let userTickets = [];
             if (logThread) {
                 const oldestValidTime = Date.now() - (2 * 60 * 60 * 1000); // 2 hours
                 const messages = await logThread.messages.fetch({ limit: 100 });
                 messages.forEach(msg => {
                     if (msg.createdTimestamp >= oldestValidTime) {
                         if (msg.content.includes(`USER: ${playersInfo[0].id}`) && msg.content.includes('TICKET S/S+')) {
-                            ticketCount++;
+                            userTickets.push(msg.createdTimestamp);
                         }
                     }
                 });
+                ticketCount = userTickets.length;
             }
 
+            var limitReached = false;
+            var timeRemainingStr = '';
             if (ticketCount >= 3) {
-                return interaction.reply({ 
-                    content: `❌ **Límite Alcanzado:** <@${playersInfo[0].id}> ha agotado sus 3 intentos de roles aleatorios para subir a rango S/S+. Debes esperar 2 horas desde tu primer intento para que se renueven los tickets.`, 
-                    ephemeral: true 
-                });
+                limitReached = true;
+                userTickets.sort((a, b) => a - b);
+                const oldestTicket = userTickets[0];
+                const expiresAt = oldestTicket + (2 * 60 * 60 * 1000);
+                const remainingMs = expiresAt - Date.now();
+                
+                const totalSeconds = Math.floor(remainingMs / 1000);
+                const rHours = Math.floor(totalSeconds / 3600);
+                const rMins = Math.floor((totalSeconds % 3600) / 60);
+                const rSecs = totalSeconds % 60;
+                
+                if (rHours > 0) {
+                    timeRemainingStr = `${rHours}:${rMins.toString().padStart(2, '0')}:${rSecs.toString().padStart(2, '0')}`;
+                } else {
+                    timeRemainingStr = `${rMins.toString().padStart(2, '0')}:${rSecs.toString().padStart(2, '0')}`;
+                }
             }
         }
 
@@ -295,22 +311,27 @@ module.exports = {
         if (isSRankUp) {
             const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
-            replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
             
-            const btnRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('generar_roles_s')
-                    .setEmoji('🎲')
-                    .setLabel('Generar Roles Aleatorios')
-                    .setStyle(ButtonStyle.Primary)
-            );
-            
-            replyOptions.components = [btnRow];
+            if (limitReached) {
+                replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar un intento.`;
+            } else {
+                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
+                
+                const btnRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('generar_roles_s')
+                        .setEmoji('🎲')
+                        .setLabel('Generar Roles Aleatorios')
+                        .setStyle(ButtonStyle.Primary)
+                );
+                
+                replyOptions.components = [btnRow];
+            }
         }
 
         const replyMessage = await interaction.reply({ ...replyOptions, fetchReply: true });
 
-        if (isSRankUp) {
+        if (isSRankUp && !limitReached) {
             const filter = i => i.customId === 'generar_roles_s';
             const collector = replyMessage.createMessageComponentCollector({ filter, time: 5 * 60 * 1000 });
 
