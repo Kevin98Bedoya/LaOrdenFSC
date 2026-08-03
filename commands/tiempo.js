@@ -293,27 +293,46 @@ module.exports = {
         }
 
         if (isSRankUp) {
+            const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
-            replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nReacciona con el emoji 🎲 en este mensaje para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
+            replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
+            
+            const btnRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('generar_roles_s')
+                    .setEmoji('🎲')
+                    .setLabel('Generar Roles Aleatorios')
+                    .setStyle(ButtonStyle.Primary)
+            );
+            
+            replyOptions.components = [btnRow];
         }
 
         const replyMessage = await interaction.reply({ ...replyOptions, fetchReply: true });
 
         if (isSRankUp) {
-            await replyMessage.react('🎲');
+            const filter = i => i.customId === 'generar_roles_s';
+            const collector = replyMessage.createMessageComponentCollector({ filter, time: 5 * 60 * 1000 });
 
-            const filter = (reaction, user) => reaction.emoji.name === '🎲' && !user.bot;
-            const collector = replyMessage.createReactionCollector({ filter, time: 5 * 60 * 1000 });
-
-            collector.on('collect', async (reaction, user) => {
-                if (user.id !== playersInfo[0].id) {
-                    reaction.users.remove(user.id).catch(() => {});
-                    const warnMsg = await interaction.channel.send(`❌ <@${user.id}>, solo el jugador que va a subir de rango (<@${playersInfo[0].id}>) puede iniciar la asignación de roles.`);
-                    setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
+            collector.on('collect', async (btnInteraction) => {
+                if (btnInteraction.user.id !== playersInfo[0].id) {
+                    await btnInteraction.reply({ content: `❌ Solo el jugador que va a subir de rango (<@${playersInfo[0].id}>) puede iniciar la asignación de roles.`, ephemeral: true });
                     return;
                 }
 
                 collector.stop('success');
+                
+                // Deshabilitar el botón
+                const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+                const disabledRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('generar_roles_s')
+                        .setEmoji('🎲')
+                        .setLabel('Generar Roles Aleatorios')
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(true)
+                );
+                await btnInteraction.update({ components: [disabledRow] }).catch(() => {});
 
                 if (logThread) {
                     await logThread.send(`TICKET S/S+ | USER: ${playersInfo[0].id} | NAME: ${playersInfo[0].name} | DATE: <t:${Math.floor(Date.now() / 1000)}:F>`);
@@ -330,18 +349,28 @@ module.exports = {
                 const { asignarDuo, asignarTrio, asignarSquad } = require('../rolesHelper');
                 const officialMessage = `VÁLIDA PARA SUBIDA A RANGO ${p1EffectiveRankName} DE ${playersInfo[0].name}`;
 
+                // Usa interaction.followUp ya que btnInteraction fue respondido con update
                 if (playerCount === 2) {
-                    await asignarDuo(interaction, assignments, '', officialMessage);
+                    await asignarDuo(btnInteraction, assignments, '', officialMessage);
                 } else if (playerCount === 3) {
-                    await asignarTrio(interaction, assignments, '', officialMessage);
+                    await asignarTrio(btnInteraction, assignments, '', officialMessage);
                 } else if (playerCount === 4) {
-                    await asignarSquad(interaction, assignments, '', officialMessage);
+                    await asignarSquad(btnInteraction, assignments, '', officialMessage);
                 }
             });
             
-            collector.on('end', (collected, reason) => {
+            collector.on('end', async (collected, reason) => {
                 if (reason === 'time') {
-                    replyMessage.reactions.removeAll().catch(() => {});
+                    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+                    const expiredRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('generar_roles_s')
+                            .setEmoji('🎲')
+                            .setLabel('Tiempo Expirado')
+                            .setStyle(ButtonStyle.Secondary)
+                            .setDisabled(true)
+                    );
+                    await interaction.editReply({ components: [expiredRow] }).catch(() => {});
                 }
             });
         }
