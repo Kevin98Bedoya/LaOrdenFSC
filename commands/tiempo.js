@@ -69,14 +69,22 @@ module.exports = {
                         name: member.displayName,
                         currentRank: currentRank,
                         previousRank: history ? history.rankName : null,
-                        historySeason: history ? history.season : null
+                        historySeason: history ? history.season : null,
+                        isMention: true,
+                        user: member.user,
+                        isFake: false,
+                        id: userId
                     });
                 } catch (error) {
                     playersInfo.push({
                         name: 'Desconocido',
                         currentRank: 'Sin-Rango',
                         previousRank: null,
-                        historySeason: null
+                        historySeason: null,
+                        isMention: true,
+                        user: null,
+                        isFake: false,
+                        id: userId
                     });
                 }
             } else {
