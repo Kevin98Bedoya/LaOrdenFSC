@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getUserRank, getRankData, getRankIndex, RANGOS, RANGOS_NOMBRES, getUserHistory } = require('../utils');
 
 function calculateWeightedTime(currentRankName, previousRankName, playerCount = 4) {
@@ -35,6 +35,8 @@ module.exports = {
         .addStringOption(option => option.setName('jugador3').setDescription('Compañero 3 (Mención, Rango, o "-" para vacío)').setRequired(true))
         .addStringOption(option => option.setName('jugador4').setDescription('Compañero 4 (Mención, Rango, o "-" para vacío)').setRequired(true)),
     async execute(interaction) {
+        await interaction.deferReply();
+        
         const inputStrings = [
             interaction.options.getString('jugador1'),
             interaction.options.getString('jugador2'),
@@ -46,8 +48,8 @@ module.exports = {
         const validInputs = inputStrings.filter(input => {
             if (!input) return false;
             const str = input.trim();
-            if (str === '-' || str.toLowerCase() === 'nada' || str.toLowerCase() === 'vacio') return false; // Ignorar explícitamente vacíos
-            return true; // Contar cualquier otra cosa como jugador (si no es válido, se le asignará Sin-Rango)
+            if (str === '-' || str.toLowerCase() === 'nada' || str.toLowerCase() === 'vacio') return false;
+            return true;
         });
         const playerCount = validInputs.length;
 
@@ -94,9 +96,8 @@ module.exports = {
 
                 // Validar que el primer rango sea válido
                 if (!RANGOS_NOMBRES.includes(cRank)) {
-                    return interaction.reply({
-                        content: `❌ **Error:** "${input}" no es un parámetro válido. Cada espacio debe ser una mención (\`@Jugador\`), un guion (\`-\`) para omitir, o un rango válido (ej: \`C\` o \`S+/A\`).`,
-                        ephemeral: true
+                    return interaction.editReply({
+                        content: `❌ **Error:** "${input}" no es un parámetro válido. Cada espacio debe ser una mención (\`@Jugador\`), un guion (\`-\`) para omitir, o un rango válido (ej: \`C\` o \`S+/A\`).`
                     });
                 }
 
@@ -107,9 +108,8 @@ module.exports = {
                 if (parts.length > 1) {
                     const pRank = parts[1].trim();
                     if (!RANGOS_NOMBRES.includes(pRank)) {
-                        return interaction.reply({
-                            content: `❌ **Error:** El rango histórico "${pRank}" en "${input}" no es válido. Usa uno de: ${RANGOS_NOMBRES.join(', ')}.`,
-                            ephemeral: true
+                        return interaction.editReply({
+                            content: `❌ **Error:** El rango histórico "${pRank}" en "${input}" no es válido. Usa uno de: ${RANGOS_NOMBRES.join(', ')}.`
                         });
                     }
                     previousRank = pRank;
@@ -134,7 +134,7 @@ module.exports = {
         const p1EffectiveRankName = p1EffectiveRankData ? p1EffectiveRankData.name : null;
 
         if (p1CurrentRank === 'S+') {
-            return interaction.reply({ content: 'El Jugador 1 ya es **S+** y no puede subir más de rango.' });
+            return interaction.editReply({ content: 'El Jugador 1 ya es **S+** y no puede subir más de rango.' });
         }
 
         const isSRankUp = p1EffectiveRankName === 'S' || p1EffectiveRankName === 'S+';
@@ -145,18 +145,18 @@ module.exports = {
         if (isSRankUp) {
             const hasNonMentions = playersInfo.some(p => !p.isMention);
             if (hasNonMentions) {
-                return interaction.reply({ content: `❌ **Error:** Para subir a rango **${p1EffectiveRankName}**, TODOS los jugadores del equipo deben ser mencionados (@Jugador). No se permiten rangos en texto (Los vacíos con "-" sí están permitidos).`, ephemeral: true });
+                return interaction.editReply({ content: `❌ **Error:** Para subir a rango **${p1EffectiveRankName}**, TODOS los jugadores del equipo deben ser mencionados (@Jugador). No se permiten rangos en texto (Los vacíos con "-" sí están permitidos).` });
             }
 
             const uniqueIds = new Set(playersInfo.map(p => p.id));
             if (uniqueIds.size !== playersInfo.length) {
-                return interaction.reply({ content: `❌ **Error:** Hay jugadores repetidos en el equipo. Por favor, menciona a jugadores distintos.`, ephemeral: true });
+                return interaction.editReply({ content: `❌ **Error:** Hay jugadores repetidos en el equipo. Por favor, menciona a jugadores distintos.` });
             }
 
             for (let i = 1; i < playerCount; i++) {
                 const mateIndex = getRankIndex(playersInfo[i].currentRank);
                 if (p1Index >= mateIndex + 2) {
-                    return interaction.reply({ content: `❌ **Error:** El Jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No puede subir a **${p1EffectiveRankName}** hasta que este compañero suba de rango.`, ephemeral: true });
+                    return interaction.editReply({ content: `❌ **Error:** El Jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No puede subir a **${p1EffectiveRankName}** hasta que este compañero suba de rango.` });
                 }
             }
 
@@ -234,7 +234,7 @@ module.exports = {
             msg += `\n\n🎉 **Promoción:** Si se logra este tiempo, el/los siguiente(s) integrante(s) subirán a **Rango C**: **${subenNombres}**.`;
 
             if (warnings.length > 0) msg += `\n\n${warnings.join('\n')}`;
-            return interaction.reply({ content: msg });
+            return interaction.editReply({ content: msg });
         }
 
         // Cálculo de promedio ponderado
@@ -309,7 +309,6 @@ module.exports = {
         }
 
         if (isSRankUp) {
-            const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
             
             if (limitReached) {
@@ -329,7 +328,7 @@ module.exports = {
             }
         }
 
-        const replyMessage = await interaction.reply({ ...replyOptions, fetchReply: true });
+        const replyMessage = await interaction.editReply({ ...replyOptions, fetchReply: true });
 
         if (isSRankUp && !limitReached) {
             const filter = i => i.customId === 'generar_roles_s';
@@ -344,7 +343,6 @@ module.exports = {
                 collector.stop('success');
                 
                 // Deshabilitar el botón
-                const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                 const disabledRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId('generar_roles_s')
@@ -382,7 +380,6 @@ module.exports = {
             
             collector.on('end', async (collected, reason) => {
                 if (reason === 'time') {
-                    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                     const expiredRow = new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
                             .setCustomId('generar_roles_s')
