@@ -111,21 +111,83 @@ module.exports = {
                     name: `J${i + 1}`,
                     currentRank: currentRank,
                     previousRank: previousRank,
-                    historySeason: previousRank ? historySeason : null
+                    historySeason: previousRank ? historySeason : null,
+                    isMention: false,
+                    user: null,
+                    isFake: true,
+                    id: null
                 });
             }
         }
 
         const p1CurrentRank = playersInfo[0].currentRank;
         const p1Index = getRankIndex(p1CurrentRank);
+        const p1EffectiveRankData = RANGOS[p1Index + 1];
+        const p1EffectiveRankName = p1EffectiveRankData ? p1EffectiveRankData.name : null;
+
+        if (p1CurrentRank === 'S+') {
+            return interaction.reply({ content: 'El Jugador 1 ya es **S+** y no puede subir más de rango.' });
+        }
+
+        const isSRankUp = p1EffectiveRankName === 'S' || p1EffectiveRankName === 'S+';
+        let logThread = null;
+        let ticketCount = 0;
+
+        // Validaciones estrictas para S y S+
+        if (isSRankUp) {
+            const hasNonMentions = playersInfo.some(p => !p.isMention);
+            if (hasNonMentions) {
+                return interaction.reply({ content: `❌ **Error:** Para subir a rango **${p1EffectiveRankName}**, TODOS los jugadores del equipo deben ser mencionados (@Jugador). No se permiten rangos en texto (Los vacíos con "-" sí están permitidos).`, ephemeral: true });
+            }
+
+            const uniqueIds = new Set(playersInfo.map(p => p.id));
+            if (uniqueIds.size !== playersInfo.length) {
+                return interaction.reply({ content: `❌ **Error:** Hay jugadores repetidos en el equipo. Por favor, menciona a jugadores distintos.`, ephemeral: true });
+            }
+
+            for (let i = 1; i < playerCount; i++) {
+                const mateIndex = getRankIndex(playersInfo[i].currentRank);
+                if (p1Index >= mateIndex + 2) {
+                    return interaction.reply({ content: `❌ **Error:** El Jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No puede subir a **${p1EffectiveRankName}** hasta que este compañero suba de rango.`, ephemeral: true });
+                }
+            }
+
+            // Validar Tickets en el hilo comandos-bot-caché
+            const activeThreads = await interaction.guild.channels.fetchActiveThreads();
+            logThread = activeThreads.threads.find(t => t.name === 'comandos-bot-caché');
+            if (!logThread) {
+                logThread = interaction.guild.channels.cache.find(c => c.name === 'comandos-bot-caché');
+            }
+
+            if (logThread) {
+                const oldestValidTime = Date.now() - (2 * 60 * 60 * 1000); // 2 hours
+                const messages = await logThread.messages.fetch({ limit: 100 });
+                messages.forEach(msg => {
+                    if (msg.createdTimestamp >= oldestValidTime) {
+                        if (msg.content.includes(`USER: ${playersInfo[0].id}`) && msg.content.includes('TICKET S/S+')) {
+                            ticketCount++;
+                        }
+                    }
+                });
+            }
+
+            if (ticketCount >= 3) {
+                return interaction.reply({ 
+                    content: `❌ **Límite Alcanzado:** <@${playersInfo[0].id}> ha agotado sus 3 intentos de roles aleatorios para subir a rango S/S+. Debes esperar 2 horas desde tu primer intento para que se renueven los tickets.`, 
+                    ephemeral: true 
+                });
+            }
+        }
 
         let warnings = [];
 
-        // Comprobar diferencia de 2 rangos o más
-        for (let i = 1; i < playerCount; i++) {
-            const mateIndex = getRankIndex(playersInfo[i].currentRank);
-            if (p1Index >= mateIndex + 2) {
-                warnings.push(`⚠️ **Advertencia:** El jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No podrá subir de rango hasta que este compañero suba.`);
+        // Comprobar diferencia de 2 rangos o más (Solo advertencia para no-S)
+        if (!isSRankUp) {
+            for (let i = 1; i < playerCount; i++) {
+                const mateIndex = getRankIndex(playersInfo[i].currentRank);
+                if (p1Index >= mateIndex + 2) {
+                    warnings.push(`⚠️ **Advertencia:** El jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No podrá subir de rango hasta que este compañero suba.`);
+                }
             }
         }
 
@@ -150,14 +212,6 @@ module.exports = {
             if (warnings.length > 0) msg += `\n\n${warnings.join('\n')}`;
             return interaction.reply({ content: msg });
         }
-
-        if (p1CurrentRank === 'S+') {
-            return interaction.reply({ content: 'El Jugador 1 ya es **S+** y no puede subir más de rango.' });
-        }
-
-        // Calcular rango efectivo para P1
-        const p1EffectiveRankData = RANGOS[p1Index + 1];
-        const p1EffectiveRankName = p1EffectiveRankData.name;
 
         // Cálculo de promedio ponderado
         const p1WeightedTime = calculateWeightedTime(p1EffectiveRankName, playersInfo[0].previousRank, playerCount);
@@ -189,7 +243,6 @@ module.exports = {
         const rows = [];
         const p1RowRank = `${p1CurrentRank}➔${p1EffectiveRankName}`;
 
-        // Build row for P1
         let p1PrevStr = '';
         if (playersInfo[0].previousRank) {
             const pIndex = getRankIndex(playersInfo[0].previousRank);
@@ -226,10 +279,63 @@ module.exports = {
             .addFields({ name: '', value: partyBlock });
 
         let replyOptions = { embeds: [embed] };
+        
         if (warnings.length > 0) {
             replyOptions.content = warnings.join('\n');
         }
 
-        await interaction.reply(replyOptions);
+        if (isSRankUp) {
+            const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
+            replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nReacciona con el emoji 🎲 en este mensaje para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
+        }
+
+        const replyMessage = await interaction.reply({ ...replyOptions, fetchReply: true });
+
+        if (isSRankUp) {
+            await replyMessage.react('🎲');
+
+            const filter = (reaction, user) => reaction.emoji.name === '🎲' && !user.bot;
+            const collector = replyMessage.createReactionCollector({ filter, time: 5 * 60 * 1000 });
+
+            collector.on('collect', async (reaction, user) => {
+                if (user.id !== playersInfo[0].id) {
+                    reaction.users.remove(user.id).catch(() => {});
+                    const warnMsg = await interaction.channel.send(`❌ <@${user.id}>, solo el jugador que va a subir de rango (<@${playersInfo[0].id}>) puede iniciar la asignación de roles.`);
+                    setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
+                    return;
+                }
+
+                collector.stop('success');
+
+                if (logThread) {
+                    await logThread.send(`TICKET S/S+ | USER: ${playersInfo[0].id} | NAME: ${playersInfo[0].name} | DATE: <t:${Math.floor(Date.now() / 1000)}:F>`);
+                }
+
+                const assignments = playersInfo.map(p => ({
+                    user: p.user,
+                    isFake: p.isFake,
+                    displayName: p.name,
+                    isVoltedge: false,
+                    roles: {}
+                }));
+
+                const { asignarDuo, asignarTrio, asignarSquad } = require('../rolesHelper');
+                const officialMessage = `VÁLIDA PARA SUBIDA A RANGO ${p1EffectiveRankName} DE ${playersInfo[0].name}`;
+
+                if (playerCount === 2) {
+                    await asignarDuo(interaction, assignments, '', officialMessage);
+                } else if (playerCount === 3) {
+                    await asignarTrio(interaction, assignments, '', officialMessage);
+                } else if (playerCount === 4) {
+                    await asignarSquad(interaction, assignments, '', officialMessage);
+                }
+            });
+            
+            collector.on('end', (collected, reason) => {
+                if (reason === 'time') {
+                    replyMessage.reactions.removeAll().catch(() => {});
+                }
+            });
+        }
     },
 };
