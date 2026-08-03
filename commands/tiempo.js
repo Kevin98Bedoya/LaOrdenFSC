@@ -186,8 +186,8 @@ module.exports = {
             if (ticketCount >= 3) {
                 limitReached = true;
                 userTickets.sort((a, b) => a - b);
-                const oldestTicket = userTickets[0];
-                const expiresAt = oldestTicket + (2 * 60 * 60 * 1000);
+                const newestTicket = userTickets[userTickets.length - 1]; // último mensaje (newest)
+                const expiresAt = newestTicket + (2 * 60 * 60 * 1000);
                 const remainingMs = expiresAt - Date.now();
                 
                 const totalSeconds = Math.floor(remainingMs / 1000);
@@ -313,7 +313,7 @@ module.exports = {
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
             
             if (limitReached) {
-                replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar un intento.`;
+                replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar los 3 intentos.`;
             } else {
                 replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
                 
