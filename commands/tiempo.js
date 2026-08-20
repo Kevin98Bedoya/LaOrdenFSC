@@ -141,15 +141,12 @@ module.exports = {
         let logThread = null;
         let ticketCount = 0;
 
+        const hasNonMentions = playersInfo.some(p => !p.isMention);
         // Validaciones estrictas para S y S+
         if (isSRankUp) {
-            const hasNonMentions = playersInfo.some(p => !p.isMention);
-            if (hasNonMentions) {
-                return interaction.editReply({ content: `❌ **Error:** Para subir a rango **${p1EffectiveRankName}**, TODOS los jugadores del equipo deben ser mencionados (@Jugador). No se permiten rangos en texto (Los vacíos con "-" sí están permitidos).` });
-            }
-
-            const uniqueIds = new Set(playersInfo.map(p => p.id));
-            if (uniqueIds.size !== playersInfo.length) {
+            const mentions = playersInfo.filter(p => p.isMention);
+            const uniqueIds = new Set(mentions.map(p => p.id));
+            if (uniqueIds.size !== mentions.length) {
                 return interaction.editReply({ content: `❌ **Error:** Hay jugadores repetidos en el equipo. Por favor, menciona a jugadores distintos.` });
             }
 
@@ -238,9 +235,16 @@ module.exports = {
         }
 
         // Cálculo de promedio ponderado
+        let p1WeightMultiplier = 1;
+        if (playerCount === 4) p1WeightMultiplier = 4;
+        else if (playerCount === 3) p1WeightMultiplier = 3;
+        else if (playerCount === 2) p1WeightMultiplier = 2;
+
+        const p1Weight = p1EffectiveRankData.weight * p1WeightMultiplier;
+
         const p1WeightedTime = calculateWeightedTime(p1EffectiveRankName, playersInfo[0].previousRank, playerCount);
-        let sumTotal = p1WeightedTime * p1EffectiveRankData.weight;
-        let sumWeights = p1EffectiveRankData.weight;
+        let sumTotal = p1WeightedTime * p1Weight;
+        let sumWeights = p1Weight;
 
         for (let i = 1; i < playerCount; i++) {
             const pInfo = playersInfo[i];
@@ -276,7 +280,7 @@ module.exports = {
                 p1PrevStr = `  ${playersInfo[0].historySeason}: ${playersInfo[0].previousRank} ${pWeight}x`;
             }
         }
-        rows.push(`${playersInfo[0].name.padEnd(15, ' ').substring(0, 15)} ${p1RowRank.padEnd(11, ' ')} ${formatTime(p1WeightedTime).padStart(5, ' ')}  ${p1EffectiveRankData.weight}x${p1PrevStr}`);
+        rows.push(`${playersInfo[0].name.padEnd(15, ' ').substring(0, 15)} ${p1RowRank.padEnd(11, ' ')} ${formatTime(p1WeightedTime).padStart(5, ' ')}  ${p1Weight}x${p1PrevStr}`);
 
         for (let i = 1; i < playerCount; i++) {
             const pInfo = playersInfo[i];
@@ -311,7 +315,9 @@ module.exports = {
         if (isSRankUp) {
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
             
-            if (limitReached) {
+            if (hasNonMentions) {
+                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**. El botón de aleatorizar los roles aparecerá cuando ponga solo menciones (@Jugador) o -.`;
+            } else if (limitReached) {
                 replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar los 3 intentos.`;
             } else {
                 replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
@@ -330,7 +336,7 @@ module.exports = {
 
         const replyMessage = await interaction.editReply({ ...replyOptions, fetchReply: true });
 
-        if (isSRankUp && !limitReached) {
+        if (isSRankUp && !limitReached && !hasNonMentions) {
             const filter = i => i.customId === 'generar_roles_s';
             const collector = replyMessage.createMessageComponentCollector({ filter, time: 5 * 60 * 1000 });
 
