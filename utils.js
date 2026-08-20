@@ -90,13 +90,29 @@ const getCurrentSeason = (guild) => {
     return highestSeason;
 };
 
+const RANGO_EMOJIS = {
+    'S+': ':S2_Rank:',
+    'S': ':S_Rank:',
+    'A+': ':A2_Rank:',
+    'A': ':A_Rank:',
+    'B+': ':B2_Rank:',
+    'B': ':B_Rank:',
+    'C+': ':C2_Rank:',
+    'C': ':C_Rank:',
+    'Sin-Rango': ':No_Rank:'
+};
+
+const getRankEmoji = (rankName) => RANGO_EMOJIS[rankName] || '';
+
 module.exports = {
     RANGOS,
     RANGOS_NOMBRES,
+    RANGO_EMOJIS,
     getUserRank,
     getRankData,
     getRankIndex,
     ensureRole,
     getUserHistory,
-    getCurrentSeason
+    getCurrentSeason,
+    getRankEmoji
 };

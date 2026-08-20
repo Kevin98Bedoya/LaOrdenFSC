@@ -1,16 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { getUserRank, RANGOS_NOMBRES, getRankData } = require('../utils');
+const { getUserRank, RANGOS_NOMBRES, getRankData, RANGO_EMOJIS } = require('../utils');
 
-const EMOJIS = {
-    'S+': '🔴',
-    'S': '🔴',
-    'A+': '🟣',
-    'A': '🔵',
-    'B+': '🟢',
-    'B': '🧊',
-    'C+': '🟠',
-    'C': '🟠'
-};
+const EMOJIS = RANGO_EMOJIS;
 
 module.exports = {
     data: new SlashCommandBuilder()
