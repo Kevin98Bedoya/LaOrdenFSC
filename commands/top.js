@@ -1,7 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { getUserRank, RANGOS_NOMBRES, RANGO_EMOJIS } = require('../utils');
-
-const EMOJIS = RANGO_EMOJIS;
+const { getUserRank, RANGOS_NOMBRES, getRankEmoji } = require('../utils');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,6 +8,12 @@ module.exports = {
     async execute(interaction) {
         try {
             await interaction.deferReply();
+            
+            const EMOJIS = {};
+            RANGOS_NOMBRES.forEach(rn => {
+                EMOJIS[rn] = getRankEmoji(rn, interaction.guild);
+            });
+
             const members = await interaction.guild.members.fetch();
             
             const rankGroups = {

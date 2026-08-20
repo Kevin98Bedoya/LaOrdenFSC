@@ -134,7 +134,8 @@ module.exports = {
         const p1EffectiveRankName = p1EffectiveRankData ? p1EffectiveRankData.name : null;
 
         if (p1CurrentRank === 'S+') {
-            return interaction.editReply({ content: 'El Jugador 1 ya es :S2_Rank: **S+** y no puede subir más de rango.' });
+            const sPlusEmoji = getRankEmoji('S+', interaction.guild);
+            return interaction.editReply({ content: `El Jugador 1 ya es ${sPlusEmoji} **S+** y no puede subir más de rango.` });
         }
 
         const isSRankUp = p1EffectiveRankName === 'S' || p1EffectiveRankName === 'S+';
@@ -153,7 +154,7 @@ module.exports = {
             for (let i = 1; i < playerCount; i++) {
                 const mateIndex = getRankIndex(playersInfo[i].currentRank);
                 if (p1Index >= mateIndex + 2) {
-                    return interaction.editReply({ content: `❌ **Error:** El Jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No puede subir a ${getRankEmoji(p1EffectiveRankName)} **${p1EffectiveRankName}** hasta que este compañero suba de rango.` });
+                    return interaction.editReply({ content: `❌ **Error:** El Jugador 1 tiene 2 o más rangos de diferencia con ${playersInfo[i].name}. No puede subir a ${getRankEmoji(p1EffectiveRankName, interaction.guild)} **${p1EffectiveRankName}** hasta que este compañero suba de rango.` });
                 }
             }
 
@@ -227,8 +228,8 @@ module.exports = {
             }
             
             const subenNombres = sinRangoPlayers.map(p => p.name).join(', ');
-            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber jugador(es) :No_Rank: "Sin-Rango" en la party (${subenNombres})${extraReason}, el tiempo requerido es automáticamente ${sinRangoTime}.*`;
-            msg += `\n\n🎉 **Promoción:** Si se logra este tiempo, el/los siguiente(s) integrante(s) subirán a Rango :C_Rank: **C**: **${subenNombres}**.`;
+            let msg = `⏳ **Tiempo Objetivo:** ${sinRangoTime}\n\n*Al haber jugador(es) ${getRankEmoji('Sin-Rango', interaction.guild)} "Sin-Rango" en la party (${subenNombres})${extraReason}, el tiempo requerido es automáticamente ${sinRangoTime}.*`;
+            msg += `\n\n🎉 **Promoción:** Si se logra este tiempo, el/los siguiente(s) integrante(s) subirán a Rango ${getRankEmoji('C', interaction.guild)} **C**: **${subenNombres}**.`;
 
             if (warnings.length > 0) msg += `\n\n${warnings.join('\n')}`;
             return interaction.editReply({ content: msg });
@@ -302,7 +303,7 @@ module.exports = {
         const partyBlock = `\`\`\`\n${rows.join('\n')}\n\`\`\``;
 
         const embed = new EmbedBuilder()
-            .setTitle(`${playersInfo[0].name} ➔ ${getRankEmoji(p1EffectiveRankName)} ${p1EffectiveRankName} | Objetivo: ${formattedTime} (${playerCount}P)`)
+            .setTitle(`${playersInfo[0].name} ➔ ${getRankEmoji(p1EffectiveRankName, interaction.guild)} ${p1EffectiveRankName} | Objetivo: ${formattedTime} (${playerCount}P)`)
             .setColor('#00b0f4')
             .addFields({ name: '', value: partyBlock });
 
@@ -316,11 +317,11 @@ module.exports = {
             const contentPrefix = replyOptions.content ? replyOptions.content + '\n\n' : '';
             
             if (hasNonMentions) {
-                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango ${getRankEmoji(p1EffectiveRankName)} **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**. El botón de aleatorizar los roles aparecerá cuando ponga solo menciones (@Jugador) o -.`;
+                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango ${getRankEmoji(p1EffectiveRankName, interaction.guild)} **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**. El botón de aleatorizar los roles aparecerá cuando ponga solo menciones (@Jugador) o -.`;
             } else if (limitReached) {
-                replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango ${getRankEmoji(p1EffectiveRankName)} **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar los 3 intentos.`;
+                replyOptions.content = contentPrefix + `❌ **Límite Alcanzado:** Has agotado tus 3 intentos de roles aleatorios para subir a rango ${getRankEmoji(p1EffectiveRankName, interaction.guild)} **${p1EffectiveRankName}**.\n⏳ Debes esperar **${timeRemainingStr}** de tiempo para regenerar los 3 intentos.`;
             } else {
-                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango ${getRankEmoji(p1EffectiveRankName)} **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
+                replyOptions.content = contentPrefix + `⚠️ **ATENCIÓN:** Para subir a Rango ${getRankEmoji(p1EffectiveRankName, interaction.guild)} **${p1EffectiveRankName}**, es obligatorio jugar con **Roles Aleatorios**.\nHaz clic en el botón 🎲 abajo para generar tus roles. *(Intentos restantes: ${3 - ticketCount}/3)*`;
                 
                 const btnRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -372,7 +373,7 @@ module.exports = {
                 }));
 
                 const { asignarDuo, asignarTrio, asignarSquad } = require('../rolesHelper');
-                const officialMessage = `VÁLIDA PARA SUBIDA A RANGO ${getRankEmoji(p1EffectiveRankName)} ${p1EffectiveRankName} DE ${playersInfo[0].name}`;
+                const officialMessage = `VÁLIDA PARA SUBIDA A RANGO ${getRankEmoji(p1EffectiveRankName, interaction.guild)} ${p1EffectiveRankName} DE ${playersInfo[0].name}`;
 
                 // Usa interaction.followUp ya que btnInteraction fue respondido con update
                 if (playerCount === 2) {

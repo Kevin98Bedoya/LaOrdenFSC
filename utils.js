@@ -91,18 +91,29 @@ const getCurrentSeason = (guild) => {
 };
 
 const RANGO_EMOJIS = {
-    'S+': ':S2_Rank:',
-    'S': ':S_Rank:',
-    'A+': ':A2_Rank:',
-    'A': ':A_Rank:',
-    'B+': ':B2_Rank:',
-    'B': ':B_Rank:',
-    'C+': ':C2_Rank:',
-    'C': ':C_Rank:',
-    'Sin-Rango': ':No_Rank:'
+    'S+': 'S2_Rank',
+    'S': 'S_Rank',
+    'A+': 'A2_Rank',
+    'A': 'A_Rank',
+    'B+': 'B2_Rank',
+    'B': 'B_Rank',
+    'C+': 'C2_Rank',
+    'C': 'C_Rank',
+    'Sin-Rango': 'No_Rank'
 };
 
-const getRankEmoji = (rankName) => RANGO_EMOJIS[rankName] || '';
+const getRankEmoji = (rankName, guildOrClient) => {
+    const emojiName = RANGO_EMOJIS[rankName];
+    if (!emojiName) return '';
+    
+    if (guildOrClient) {
+        // Buscar primero en el caché de emojis del servidor o del cliente
+        const emoji = guildOrClient.emojis?.cache.find(e => e.name === emojiName);
+        if (emoji) return emoji.toString(); // Devuelve <:name:id>
+    }
+    
+    return `:${emojiName}:`;
+};
 
 module.exports = {
     RANGOS,
