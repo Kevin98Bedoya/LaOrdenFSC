@@ -64,14 +64,16 @@ module.exports = {
             }
 
             embed.setDescription(description);
+            console.log('[TOP] Enviando interaction.editReply...');
             await interaction.editReply({ embeds: [embed] });
+            console.log('[TOP] interaction.editReply completado con éxito.');
 
         } catch (error) {
-            console.error(error);
+            console.error('[TOP ERROR CAPTURADO]:', error);
             if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({ content: 'Hubo un error al intentar mostrar el top. ¿Tiene el bot permisos para leer miembros?' });
+                await interaction.editReply({ content: 'Hubo un error al intentar mostrar el top. ¿Tiene el bot permisos para leer miembros?' }).catch(e => console.error('[TOP CATCH ERROR]:', e));
             } else {
-                await interaction.reply({ content: 'Hubo un error al intentar mostrar el top.', ephemeral: true });
+                await interaction.reply({ content: 'Hubo un error al intentar mostrar el top.', ephemeral: true }).catch(e => console.error('[TOP CATCH ERROR]:', e));
             }
         }
     },

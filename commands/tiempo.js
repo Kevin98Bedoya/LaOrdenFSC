@@ -337,7 +337,9 @@ module.exports = {
             }
         }
 
+        console.log('[TIEMPO] Enviando interaction.editReply...');
         const replyMessage = await interaction.editReply({ ...replyOptions, fetchReply: true });
+        console.log('[TIEMPO] interaction.editReply completado con éxito.');
 
         if (isSRankUp && !limitReached && !hasNonMentions) {
             const filter = i => i.customId === 'generar_roles_s';
