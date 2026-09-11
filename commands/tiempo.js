@@ -35,6 +35,7 @@ module.exports = {
         .addStringOption(option => option.setName('jugador3').setDescription('Compañero 3 (Mención, Rango, o "-" para vacío)').setRequired(true))
         .addStringOption(option => option.setName('jugador4').setDescription('Compañero 4 (Mención, Rango, o "-" para vacío)').setRequired(true)),
     async execute(interaction) {
+        console.log('[TIEMPO] Iniciando /tiempo...');
         await interaction.deferReply();
         
         const inputStrings = [
@@ -43,6 +44,7 @@ module.exports = {
             interaction.options.getString('jugador3'),
             interaction.options.getString('jugador4')
         ];
+        console.log('[TIEMPO] Inputs:', inputStrings.join(', '));
 
         // Filtrar inputs para contar los que no sean un guion "-"
         const validInputs = inputStrings.filter(input => {

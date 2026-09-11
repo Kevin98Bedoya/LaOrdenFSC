@@ -7,6 +7,7 @@ module.exports = {
         .setDescription('Muestra la Tierlist de todos los jugadores de la comunidad basándose en sus roles.'),
     async execute(interaction) {
         try {
+            console.log('[TOP] Iniciando /top...');
             await interaction.deferReply();
             
             const EMOJIS = {};
@@ -14,7 +15,9 @@ module.exports = {
                 EMOJIS[rn] = getRankEmoji(rn, interaction.guild);
             });
 
+            console.log('[TOP] Obteniendo miembros del servidor con fetch()...');
             const members = await interaction.guild.members.fetch();
+            console.log(`[TOP] Miembros obtenidos: ${members.size}`);
             
             const rankGroups = {
                 'S+': [], 'S': [], 'A+': [], 'A': [], 'B+': [], 'B': [], 'C+': [], 'C': [], 'Sin-Rango': []
@@ -33,6 +36,7 @@ module.exports = {
                     }
                 }
             }
+            console.log('[TOP] Clasificación de miembros terminada, generando embed...');
 
             const embed = new EmbedBuilder()
                 .setTitle('🏆 TIER LIST DE JUGADORES 🏆')
