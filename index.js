@@ -177,8 +177,14 @@ process.on('uncaughtException', (error) => {
 
 console.log('[RED] Comprobando conectividad con Discord API...');
 fetch('https://discord.com/api/v10/gateway', { signal: AbortSignal.timeout(5000) })
-	.then(r => r.json())
-	.then(data => console.log('[RED ÉXITO] Conectado a Discord API:', JSON.stringify(data)))
+	.then(async r => {
+		const text = await r.text();
+		if (!r.ok) {
+			console.error(`[RED BLOQUEADA] Discord API respondió con HTTP ${r.status} ${r.statusText}. Respuesta de Cloudflare: ${text.replace(/\s+/g, ' ').substring(0, 250)}`);
+		} else {
+			console.log('[RED ÉXITO] Conectado a Discord API:', text);
+		}
+	})
 	.catch(err => console.error('[RED ERROR] Falló conexión a Discord API:', err.message));
 
 const rawToken = process.env.DISCORD_TOKEN;
