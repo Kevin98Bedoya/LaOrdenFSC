@@ -8,7 +8,9 @@ module.exports = {
     async execute(interaction) {
         try {
             console.log('[TOP] Iniciando /top...');
+            const deferStart = Date.now();
             await interaction.deferReply();
+            console.log(`[TOP] deferReply() completado en ${Date.now() - deferStart}ms`);
             
             const EMOJIS = {};
             RANGOS_NOMBRES.forEach(rn => {

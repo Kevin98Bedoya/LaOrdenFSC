@@ -36,7 +36,9 @@ module.exports = {
         .addStringOption(option => option.setName('jugador4').setDescription('Compañero 4 (Mención, Rango, o "-" para vacío)').setRequired(true)),
     async execute(interaction) {
         console.log('[TIEMPO] Iniciando /tiempo...');
+        const deferStart = Date.now();
         await interaction.deferReply();
+        console.log(`[TIEMPO] deferReply() completado en ${Date.now() - deferStart}ms`);
         
         const inputStrings = [
             interaction.options.getString('jugador1'),

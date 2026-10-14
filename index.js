@@ -1,4 +1,8 @@
 require('dotenv').config();
+const dns = require('node:dns');
+// Forzar resolución IPv4 primero para evitar cuelgues de red/IPv6 en servidores Linux/Render
+dns.setDefaultResultOrder('ipv4first');
+
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
@@ -28,6 +32,18 @@ const client = new Client({
 		VoiceStateManager: 0
 	})
 });
+
+// Monitoreo de eventos de red y límites de velocidad de la API de Discord
+client.rest.on('rateLimited', (info) => {
+	console.warn(`[REST RATELIMIT] Ruta: ${info.route} | Espera: ${info.timeToReset}ms | Global: ${info.global} | Límite: ${info.limit}`);
+});
+
+client.rest.on('invalidRequestWarning', (info) => {
+	console.warn(`[REST INVALID WARNING] Conteo: ${info.count} | Tiempo restante: ${info.remainingTime}ms`);
+});
+
+client.on('warn', (info) => console.warn('[CLIENT WARN]', info));
+client.on('error', (error) => console.error('[CLIENT ERROR]', error));
 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
@@ -117,6 +133,10 @@ client.on('interactionCreate', async interaction => {
 	}
 
 	const startTime = Date.now();
+	const warnTimer = setTimeout(() => {
+		console.warn(`[ALERTA TIMEOUT] /${commandName} lleva más de 2500ms sin responder. Discord cancelará la interacción a los 3000ms si no se completó deferReply() o reply().`);
+	}, 2500);
+
 	try {
 		console.log(`[EJECUCIÓN] Ejecutando /${commandName}...`);
 		await command.execute(interaction);
@@ -130,6 +150,8 @@ client.on('interactionCreate', async interaction => {
 		} else {
 			await interaction.reply({ content: '¡Hubo un error al ejecutar este comando!', ephemeral: true }).catch(e => console.error('[ERROR] No se pudo enviar reply:', e));
 		}
+	} finally {
+		clearTimeout(warnTimer);
 	}
 });
 
