@@ -66,6 +66,17 @@ client.once('ready', () => {
 	console.log(`[MEM] Heap usado: ${(mem.heapUsed / 1024 / 1024).toFixed(2)} MB / ${(mem.heapTotal / 1024 / 1024).toFixed(2)} MB`);
 });
 
+client.once('clientReady', () => {
+	console.log(`[INFO] Evento clientReady disparado para ${client.user ? client.user.tag : 'bot'}`);
+});
+
+// Logs de depuración del WebSocket de Discord
+client.on('debug', (info) => {
+	if (info.includes('connect') || info.includes('Shard') || info.includes('Gateway') || info.includes('Identify') || info.includes('Session') || info.includes('token') || info.includes('Heartbeat')) {
+		console.log('[DISCORD WS]', info);
+	}
+});
+
 client.on('interactionCreate', async interaction => {
 	if (!interaction.isChatInputCommand()) return;
 
@@ -164,4 +175,22 @@ process.on('uncaughtException', (error) => {
 	console.error('[FATAL: uncaughtException]', error);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+console.log('[RED] Comprobando conectividad con Discord API...');
+fetch('https://discord.com/api/v10/gateway', { signal: AbortSignal.timeout(5000) })
+	.then(r => r.json())
+	.then(data => console.log('[RED ÉXITO] Conectado a Discord API:', JSON.stringify(data)))
+	.catch(err => console.error('[RED ERROR] Falló conexión a Discord API:', err.message));
+
+const rawToken = process.env.DISCORD_TOKEN;
+const token = rawToken ? rawToken.trim().replace(/^["']|["']$/g, '') : null;
+console.log(`[CONFIG] DISCORD_TOKEN presente: ${Boolean(token)} (longitud: ${token ? token.length : 0})`);
+
+if (!token) {
+	console.error('[ERROR CRÍTICO] La variable de entorno DISCORD_TOKEN no está definida o está vacía en este entorno.');
+} else {
+	console.log('[LOGIN] Llamando client.login()...');
+	client.login(token)
+		.then(() => console.log('[LOGIN ÉXITO] Promise de client.login() resuelta con éxito.'))
+		.catch(err => console.error('[LOGIN ERROR] client.login() fue rechazado con error:', err));
+}
+
